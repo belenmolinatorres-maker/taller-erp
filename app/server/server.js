@@ -949,32 +949,35 @@ app.post('/api/data', async (req, res) => {
 // ===================== AUTO-SEED DATABASE =====================
 (async function autoSeed() {
   try {
-    const [tables] = await db.query("SELECT COUNT(*) AS cnt FROM information_schema.tables WHERE table_schema = DATABASE()");
-    if (tables[0].cnt > 0) {
-      const [existing] = await db.query('SELECT id FROM empleados WHERE usuario = "admin" AND deleted_at IS NULL');
-      if (existing.length === 0) {
-        await db.query(
-          'INSERT INTO empleados (nombre, dni, telefono, puesto, salario, alta_ss, contrato_escrito, usuario, contrasena, rol) VALUES (?,?,?,?,?,?,?,?,?,?)',
-          ['Admin del Sistema', '', '', 'Administrador', 0, 1, 1, 'admin', 'admin', 'admin']
-        );
-        console.log('Usuario admin creado (admin / admin)');
-      }
-      return;
+    await db.query('SELECT 1 FROM empresa LIMIT 1');
+    const [existing] = await db.query('SELECT id FROM empleados WHERE usuario = "admin" AND deleted_at IS NULL');
+    if (existing.length === 0) {
+      await db.query(
+        'INSERT INTO empleados (nombre, dni, telefono, puesto, salario, alta_ss, contrato_escrito, usuario, contrasena, rol) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        ['Admin del Sistema', '', '', 'Administrador', 0, 1, 1, 'admin', 'admin', 'admin']
+      );
+      console.log('Usuario admin creado (admin / admin)');
     }
+    return;
+  } catch (e) {
+    if (e.errno !== 1146) { console.log('Auto-seed:', e.message); return; }
+  }
+  try {
     const sqlPath = path.join(__dirname, '..', 'database.sql');
     if (!fs.existsSync(sqlPath)) return;
     const sql = fs.readFileSync(sqlPath, 'utf8');
     const cleanSql = sql.replace(/CREATE DATABASE .*?;/i, '').replace(/USE .*?;/i, '');
-    const statements = cleanSql.split(';').filter(s => s.trim().length > 0).map(s => s.trim());
-    for (const stmt of statements) {
-      try {
-        await db.query(stmt + ';');
-      } catch (stmtErr) {
-        console.log('Seed statement skipped:', stmtErr.message.substring(0, 60));
-      }
+    const mysql2 = require('mysql2/promise');
+    const cfg = { host: process.env.DB_HOST || process.env.MYSQL_HOST || '127.0.0.1', port: parseInt(process.env.DB_PORT || process.env.MYSQL_PORT) || 3306, user: process.env.DB_USER || process.env.MYSQL_USER || 'root', password: process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD || '', database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'Taller_MoTor', charset: 'utf8mb4', multipleStatements: true };
+    if (process.env.MYSQL_URL) {
+      const url = new URL(process.env.MYSQL_URL);
+      cfg.host = url.hostname; cfg.port = parseInt(url.port) || 3306; cfg.user = decodeURIComponent(url.username); cfg.password = decodeURIComponent(url.password); cfg.database = url.pathname.replace(/^\//, '');
     }
+    const conn = await mysql2.createConnection(cfg);
+    await conn.query(cleanSql);
+    await conn.end();
     console.log('Base de datos inicializada con tablas y datos de prueba');
-  } catch (e) { console.log('Auto-seed check:', e.message); }
+  } catch (e) { console.log('Auto-seed error:', e.message); }
 })();
 
 // Global error handler
