@@ -11,7 +11,8 @@ function getConfig() {
       port: parseInt(url.port) || 3306,
       user: decodeURIComponent(url.username),
       password: decodeURIComponent(url.password),
-      database: url.pathname.replace(/^\//, '')
+      database: url.pathname.replace(/^\//, ''),
+      ssl: { rejectUnauthorized: false }
     };
   }
   return {
@@ -30,12 +31,16 @@ async function run() {
     multipleStatements: true
   });
 
-  // Check if already seeded
-  const [rows] = await pool.query("SELECT COUNT(*) AS cnt FROM empleados");
-  if (rows[0].cnt > 0) {
-    console.log('Database already has data, skipping seed');
-    await pool.end();
-    process.exit(0);
+  // Check if tables exist (catch error if no tables at all)
+  try {
+    const [rows] = await pool.query("SELECT COUNT(*) AS cnt FROM empleados");
+    if (rows[0].cnt > 0) {
+      console.log('Database already has data, skipping seed');
+      await pool.end();
+      process.exit(0);
+    }
+  } catch (e) {
+    // Table doesn't exist, proceed with seed
   }
 
   const sqlPath = path.join(__dirname, '..', 'database.sql');
@@ -48,7 +53,7 @@ async function run() {
     console.log('Schema + seed data loaded');
   }
 
-  // Ensure admin exists with plain text password
+  // Ensure admin exists
   await pool.query(
     "INSERT IGNORE INTO empleados (nombre, usuario, contrasena, rol, alta_ss, contrato_escrito) VALUES ('Admin del Sistema', 'admin', 'admin', 'admin', 1, 1)"
   );

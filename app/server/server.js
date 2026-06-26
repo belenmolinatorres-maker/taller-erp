@@ -4,8 +4,6 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
-const fs = require('fs');
-const path = require('path');
 const db = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_me';
@@ -946,48 +944,29 @@ app.post('/api/data', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ===================== START =====================
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Taller ERP API server running on http://localhost:${PORT}`);
-  console.log(`Serving static files from parent directory`);
-  // Auto-seed after server is listening (non-blocking)
-  autoSeed();
-});
-
-async function autoSeed() {
+// ===================== AUTO-SEED ADMIN USER =====================
+(async function seedAdmin() {
   try {
-    const mysql2 = require('mysql2/promise');
-    let cfg;
-    if (process.env.MYSQL_URL) {
-      const u = new URL(process.env.MYSQL_URL);
-      cfg = { host: u.hostname, port: parseInt(u.port) || 3306, user: decodeURIComponent(u.username), password: decodeURIComponent(u.password), database: u.pathname.replace(/^\//, ''), charset: 'utf8mb4', multipleStatements: true, ssl: { rejectUnauthorized: false } };
-    } else {
-      cfg = { host: process.env.DB_HOST || '127.0.0.1', port: parseInt(process.env.DB_PORT) || 3306, user: process.env.DB_USER || 'root', password: process.env.DB_PASSWORD || '', database: process.env.DB_NAME || 'Taller_MoTor', charset: 'utf8mb4', multipleStatements: true };
+    const [existing] = await db.query('SELECT id FROM empleados WHERE usuario = "admin" AND deleted_at IS NULL');
+    if (existing.length === 0) {
+      await db.query(
+        'INSERT INTO empleados (nombre, dni, telefono, puesto, salario, alta_ss, contrato_escrito, usuario, contrasena, rol) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        ['Admin del Sistema', '', '', 'Administrador', 0, 1, 1, 'admin', 'admin', 'admin']
+      );
+      console.log('Usuario admin creado (admin / admin)');
     }
-    const conn = await mysql2.createConnection(cfg);
-    const [rows] = await conn.query("SELECT COUNT(*) AS cnt FROM information_schema.tables WHERE table_schema = DATABASE()");
-    if (rows[0].cnt > 0) {
-      const [existing] = await conn.query('SELECT id FROM empleados WHERE usuario = "admin"');
-      if (existing.length === 0) {
-        await conn.query("INSERT INTO empleados (nombre, usuario, contrasena, rol, alta_ss, contrato_escrito) VALUES ('Admin del Sistema', 'admin', 'admin', 'admin', 1, 1)");
-      }
-      console.log('Database OK');
-      await conn.end();
-      return;
-    }
-    const sqlPath = path.join(__dirname, '..', 'database.sql');
-    if (fs.existsSync(sqlPath)) {
-      const sql = fs.readFileSync(sqlPath, 'utf8');
-      await conn.query(sql.replace(/CREATE DATABASE .*?;/i, '').replace(/USE .*?;/i, ''));
-      console.log('Database initialized with schema and seed data');
-    }
-    await conn.end();
-  } catch (e) { console.log('Auto-seed:', e.message); }
-}
+  } catch (e) { console.log('Admin seed check:', e.message); }
+})();
 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Error interno del servidor' });
+});
+
+// ===================== START =====================
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Taller ERP API server running on http://localhost:${PORT}`);
+  console.log(`Serving static files from parent directory`);
 });

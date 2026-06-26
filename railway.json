@@ -7,7 +7,7 @@
     }
   },
   "deploy": {
-    "startCommand": "node app/server/server.js",
+    "startCommand": "node app/server/seed-cloud.js && node app/server/server.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
