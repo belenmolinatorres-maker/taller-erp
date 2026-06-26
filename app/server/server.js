@@ -946,49 +946,48 @@ app.post('/api/data', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ===================== AUTO-SEED DATABASE =====================
-(async function autoSeed() {
-  try {
-    await db.query('SELECT 1 FROM empresa LIMIT 1');
-    const [existing] = await db.query('SELECT id FROM empleados WHERE usuario = "admin" AND deleted_at IS NULL');
-    if (existing.length === 0) {
-      await db.query(
-        'INSERT INTO empleados (nombre, dni, telefono, puesto, salario, alta_ss, contrato_escrito, usuario, contrasena, rol) VALUES (?,?,?,?,?,?,?,?,?,?)',
-        ['Admin del Sistema', '', '', 'Administrador', 0, 1, 1, 'admin', 'admin', 'admin']
-      );
-      console.log('Usuario admin creado (admin / admin)');
-    }
-    return;
-  } catch (e) {
-    if (e.errno !== 1146) { console.log('Auto-seed:', e.message); return; }
-  }
-  try {
-    const sqlPath = path.join(__dirname, '..', 'database.sql');
-    if (!fs.existsSync(sqlPath)) return;
-    const sql = fs.readFileSync(sqlPath, 'utf8');
-    const cleanSql = sql.replace(/CREATE DATABASE .*?;/i, '').replace(/USE .*?;/i, '');
-    const mysql2 = require('mysql2/promise');
-    const cfg = { host: process.env.DB_HOST || process.env.MYSQL_HOST || '127.0.0.1', port: parseInt(process.env.DB_PORT || process.env.MYSQL_PORT) || 3306, user: process.env.DB_USER || process.env.MYSQL_USER || 'root', password: process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD || '', database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'Taller_MoTor', charset: 'utf8mb4', multipleStatements: true };
-    if (process.env.MYSQL_URL) {
-      const url = new URL(process.env.MYSQL_URL);
-      cfg.host = url.hostname; cfg.port = parseInt(url.port) || 3306; cfg.user = decodeURIComponent(url.username); cfg.password = decodeURIComponent(url.password); cfg.database = url.pathname.replace(/^\//, '');
-    }
-    const conn = await mysql2.createConnection(cfg);
-    await conn.query(cleanSql);
-    await conn.end();
-    console.log('Base de datos inicializada con tablas y datos de prueba');
-  } catch (e) { console.log('Auto-seed error:', e.message); }
-})();
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Error interno del servidor' });
-});
-
 // ===================== START =====================
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Taller ERP API server running on http://localhost:${PORT}`);
   console.log(`Serving static files from parent directory`);
+  // Auto-seed after server is listening (non-blocking)
+  autoSeed();
+});
+
+async function autoSeed() {
+  try {
+    const mysql2 = require('mysql2/promise');
+    let cfg;
+    if (process.env.MYSQL_URL) {
+      const u = new URL(process.env.MYSQL_URL);
+      cfg = { host: u.hostname, port: parseInt(u.port) || 3306, user: decodeURIComponent(u.username), password: decodeURIComponent(u.password), database: u.pathname.replace(/^\//, ''), charset: 'utf8mb4', multipleStatements: true, ssl: { rejectUnauthorized: false } };
+    } else {
+      cfg = { host: process.env.DB_HOST || '127.0.0.1', port: parseInt(process.env.DB_PORT) || 3306, user: process.env.DB_USER || 'root', password: process.env.DB_PASSWORD || '', database: process.env.DB_NAME || 'Taller_MoTor', charset: 'utf8mb4', multipleStatements: true };
+    }
+    const conn = await mysql2.createConnection(cfg);
+    const [rows] = await conn.query("SELECT COUNT(*) AS cnt FROM information_schema.tables WHERE table_schema = DATABASE()");
+    if (rows[0].cnt > 0) {
+      const [existing] = await conn.query('SELECT id FROM empleados WHERE usuario = "admin"');
+      if (existing.length === 0) {
+        await conn.query("INSERT INTO empleados (nombre, usuario, contrasena, rol, alta_ss, contrato_escrito) VALUES ('Admin del Sistema', 'admin', 'admin', 'admin', 1, 1)");
+      }
+      console.log('Database OK');
+      await conn.end();
+      return;
+    }
+    const sqlPath = path.join(__dirname, '..', 'database.sql');
+    if (fs.existsSync(sqlPath)) {
+      const sql = fs.readFileSync(sqlPath, 'utf8');
+      await conn.query(sql.replace(/CREATE DATABASE .*?;/i, '').replace(/USE .*?;/i, ''));
+      console.log('Database initialized with schema and seed data');
+    }
+    await conn.end();
+  } catch (e) { console.log('Auto-seed:', e.message); }
+}
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Error interno del servidor' });
 });

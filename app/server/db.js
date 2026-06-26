@@ -26,7 +26,9 @@ const pool = mysql.createPool({
   ...getConfig(),
   waitForConnections: true,
   connectionLimit: 10,
-  charset: 'utf8mb4'
+  charset: 'utf8mb4',
+  multipleStatements: true,
+  ssl: process.env.MYSQL_URL ? { rejectUnauthorized: false } : undefined
 });
 
 module.exports = pool;
