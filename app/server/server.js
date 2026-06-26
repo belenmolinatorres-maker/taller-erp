@@ -4,6 +4,8 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const path = require('path');
 const db = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_me';
@@ -944,18 +946,35 @@ app.post('/api/data', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ===================== AUTO-SEED ADMIN USER =====================
-(async function seedAdmin() {
+// ===================== AUTO-SEED DATABASE =====================
+(async function autoSeed() {
   try {
-    const [existing] = await db.query('SELECT id FROM empleados WHERE usuario = "admin" AND deleted_at IS NULL');
-    if (existing.length === 0) {
-      await db.query(
-        'INSERT INTO empleados (nombre, dni, telefono, puesto, salario, alta_ss, contrato_escrito, usuario, contrasena, rol) VALUES (?,?,?,?,?,?,?,?,?,?)',
-        ['Admin del Sistema', '', '', 'Administrador', 0, 1, 1, 'admin', 'admin', 'admin']
-      );
-      console.log('Usuario admin creado (admin / admin)');
+    const [tables] = await db.query("SELECT COUNT(*) AS cnt FROM information_schema.tables WHERE table_schema = DATABASE()");
+    if (tables[0].cnt > 0) {
+      const [existing] = await db.query('SELECT id FROM empleados WHERE usuario = "admin" AND deleted_at IS NULL');
+      if (existing.length === 0) {
+        await db.query(
+          'INSERT INTO empleados (nombre, dni, telefono, puesto, salario, alta_ss, contrato_escrito, usuario, contrasena, rol) VALUES (?,?,?,?,?,?,?,?,?,?)',
+          ['Admin del Sistema', '', '', 'Administrador', 0, 1, 1, 'admin', 'admin', 'admin']
+        );
+        console.log('Usuario admin creado (admin / admin)');
+      }
+      return;
     }
-  } catch (e) { console.log('Admin seed check:', e.message); }
+    const sqlPath = path.join(__dirname, '..', 'database.sql');
+    if (!fs.existsSync(sqlPath)) return;
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+    const cleanSql = sql.replace(/CREATE DATABASE .*?;/i, '').replace(/USE .*?;/i, '');
+    const statements = cleanSql.split(';').filter(s => s.trim().length > 0).map(s => s.trim());
+    for (const stmt of statements) {
+      try {
+        await db.query(stmt + ';');
+      } catch (stmtErr) {
+        console.log('Seed statement skipped:', stmtErr.message.substring(0, 60));
+      }
+    }
+    console.log('Base de datos inicializada con tablas y datos de prueba');
+  } catch (e) { console.log('Auto-seed check:', e.message); }
 })();
 
 // Global error handler
