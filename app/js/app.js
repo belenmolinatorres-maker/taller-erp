@@ -448,6 +448,7 @@ function _updateProfileBtn(){
     btn.textContent = initials.toUpperCase();
     btn.title = Auth.user.nombre + ' (Mi Perfil)';
   }
+  if (typeof renderBnav === 'function') renderBnav();
 }
 
 // ===================== AUTH =====================
@@ -533,7 +534,7 @@ const Auth = {
     if (!localStorage.getItem(tosKey)) {
       document.getElementById('tos-modal').classList.add('open');
     } else {
-      navigate('dashboard');
+      navigate(Auth.user?.rol === 'basico' ? 'clientes' : 'dashboard');
     }
   },
   logout(){
@@ -703,7 +704,7 @@ const VIEW_TITLES={dashboard:'Panel',empresa:'Empresa',clientes:'Clientes',vehic
   alertas:'Alertas',documentos:'Documentos',documentacion:'Documentación',config:'Configuración'};
 
 function navigate(view){
-  if (!Auth.hasAccess(view) && view !== 'dashboard') {
+  if (!Auth.hasAccess(view)) {
     // Fallback to first allowed view
     const allowed = PERMISOS[Auth.user?.rol] || [];
     if (allowed.length) view = allowed[0];
