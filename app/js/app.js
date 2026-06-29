@@ -668,7 +668,19 @@ function toggleSidebar(show){
   const o=document.getElementById('sidebar-overlay');
   if(show===undefined)show=!s.classList.contains('open');
   s.classList.toggle('open',show);
+  s.classList.toggle('close',!show);
   if(o)o.classList.toggle('show',show);
+}
+
+function initSidebar(){
+  const s=document.getElementById('sidebar');
+  if(window.innerWidth>1024){
+    s.classList.add('open');
+    s.classList.remove('close');
+  } else {
+    s.classList.remove('open');
+    s.classList.add('close');
+  }
 }
 
 function showToast(msg,type='success'){
@@ -2106,6 +2118,17 @@ document.addEventListener('DOMContentLoaded', async function(){
 
   document.getElementById('login-pass').onkeydown = e => { if (e.key === 'Enter') authLogin(); };
   document.getElementById('login-user').onkeydown = e => { if (e.key === 'Enter') authLogin(); };
+
+  initSidebar();
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1024 && !document.getElementById('sidebar').classList.contains('open')) {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('sidebar').classList.remove('close');
+    }
+    if (window.innerWidth <= 1024 && document.getElementById('sidebar').classList.contains('open') && !document.querySelector('#sidebar.close')) {
+      // keep current state if user manually toggled
+    }
+  });
 
   await Store.init();
 

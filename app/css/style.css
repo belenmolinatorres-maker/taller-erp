@@ -248,13 +248,23 @@ textarea.form-input{resize:vertical;min-height:72px}
 .font-bold{font-weight:700}.text-primary{color:var(--primary)}.text-success{color:var(--success)}
 .text-danger{color:var(--danger)}.hidden{display:none!important}.w-full{width:100%}
 
+/* ===== SIDEBAR TOGGLE (always available) ===== */
+#app-header .menu-btn{display:flex}
+#sidebar.close{transform:translateX(-100%)}
+#sidebar.open{transform:translateX(0)}
+
 /* ===== RESPONSIVE ===== */
-@media(max-width:768px){
-  #sidebar{position:fixed;inset:0;right:auto;transform:translateX(-100%);z-index:110;width:280px;box-shadow:4px 0 20px rgba(0,0,0,.1)}
-  #sidebar.open{transform:translateX(0)}
-  #sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:105;display:none}
+@media(min-width:1025px){
+  #sidebar{width:var(--sidebar-w);position:relative;box-shadow:none;z-index:100;transform:translateX(0);transition:transform .25s ease}
+  #sidebar.close{position:fixed;left:0;top:0;height:100vh;z-index:110;box-shadow:4px 0 20px rgba(0,0,0,.1)}
+  #sidebar-overlay{display:none!important}
+  #bottom-nav{display:none!important}
+}
+
+@media(max-width:1024px){
+  #sidebar{position:fixed;inset:0;right:auto;z-index:110;width:280px;box-shadow:4px 0 20px rgba(0,0,0,.1);transition:transform .25s ease}
+  #sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:105;display:none;backdrop-filter:blur(2px)}
   #sidebar-overlay.show{display:block}
-  #app-header .menu-btn{display:flex}
   #bottom-nav{display:flex}
   #workspace{padding:12px;padding-bottom:calc(var(--bnav-h) + 12px)}
   #views-container{padding-bottom:0}
@@ -263,13 +273,21 @@ textarea.form-input{resize:vertical;min-height:72px}
   .form-row{grid-template-columns:1fr}
   .info-grid{grid-template-columns:1fr}
   .modal{max-width:100%;border-radius:var(--radius-xl) var(--radius-xl) 0 0}
+  #app-footer{display:none}
 }
 
-@media(max-width:400px){
-  .stats{grid-template-columns:1fr 1fr;gap:8px}
-  .stat-card{padding:12px 8px}
-  .stat-card .value{font-size:20px}
-  .quick-actions{grid-template-columns:1fr 1fr;gap:8px}
-  .quick-action{padding:12px 10px}
+@media(max-width:480px){
+  :root{--sidebar-w:100%;--header-h:50px;--bnav-h:60px}
+  #sidebar{width:100%;max-width:320px}
+  #workspace{padding:10px;padding-bottom:calc(var(--bnav-h) + 10px)}
+  .stats{grid-template-columns:1fr 1fr;gap:6px}
+  .stat-card{padding:10px 6px}
+  .stat-card .value{font-size:18px}
+  .quick-actions{grid-template-columns:1fr 1fr;gap:6px}
+  .quick-action{padding:10px 8px}
+  .quick-action .text{font-size:11px}
   .list-item{padding:10px 12px}
+  .list-item .avatar{width:34px;height:34px;font-size:12px}
+  .card{padding:12px}
+  #app-header h1{font-size:14px}
 }
