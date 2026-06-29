@@ -380,7 +380,9 @@ INSERT INTO facturas (numero,cliente_id,orden_id,descripcion,total,paid,created_
 ('2026-001',1,1,'Cambio embrague + distribución',1280.50,1,DATE_SUB(CURDATE(),INTERVAL 40 DAY)),
 ('2026-002',2,2,'Revisión 60.000km + frenos',520.00,1,DATE_SUB(CURDATE(),INTERVAL 8 DAY)),
 ('2026-003',3,3,'Reparación aire acondicionado',890.00,0,DATE_SUB(CURDATE(),INTERVAL 3 DAY)),
-('2026-004',5,6,'Revisión 110.000km + distribución + diagnóstico',1750.00,1,DATE_SUB(CURDATE(),INTERVAL 15 DAY));
+('2026-004',5,6,'Revisión 110.000km + distribución + diagnóstico',1750.00,1,DATE_SUB(CURDATE(),INTERVAL 15 DAY)),
+('2026-005',1,NULL,'Reparación motor completo (culata + junta + distribución)',2150.00,1,DATE_SUB(CURDATE(),INTERVAL 2 DAY)),
+('2026-006',4,NULL,'Cambio neumáticos + alineación + revisión frenos',780.00,0,DATE_SUB(CURDATE(),INTERVAL 6 DAY));
 
 INSERT INTO facturas_items (factura_id,concepto,cantidad,precio) VALUES
 (1,'Embrague completo Sachs',1,420.00),
@@ -399,7 +401,17 @@ INSERT INTO facturas_items (factura_id,concepto,cantidad,precio) VALUES
 (4,'Aceite 5W30 (7L)',1,86.00),
 (4,'Filtros (aceite+aire+gasoil+cabina)',4,110.00),
 (4,'Mano de obra (10h)',10,750.00),
-(4,'Diagnóstico electrónico',1,60.00);
+(4,'Diagnóstico electrónico',1,60.00),
+(5,'Culata completa',1,680.00),
+(5,'Junta culata',1,45.00),
+(5,'Kit distribución',1,280.00),
+(5,'Aceite 5W30 (5L) + refrigerante',1,85.00),
+(5,'Mano de obra (14h)',14,1000.00),
+(5,'Diagnóstico electrónico',1,60.00),
+(6,'Neumático 205/55 R16 (x4)',4,90.00),
+(6,'Pastillas freno delanteras + mano obra',1,195.00),
+(6,'Alineación + equilibrado + líquido frenos',1,125.00),
+(6,'Kit filtro habitáculo + anticongelante',1,100.00);
 
 INSERT INTO gastos (concepto,amount,categoria,created_at) VALUES
 ('Recibo de luz mayo',385.20,'suministros',DATE_SUB(CURDATE(),INTERVAL 25 DAY)),
