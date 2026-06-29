@@ -8,6 +8,7 @@ const db = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_me';
 const app = express();
+const PORT = process.env.PORT || 3001;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(require('path').join(__dirname, '..')));
@@ -965,8 +966,6 @@ app.use((err, req, res, next) => {
 });
 
 // ===================== START =====================
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Taller ERP API server running on http://localhost:${PORT}`);
-  console.log(`Serving static files from parent directory`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Taller ERP API server running on port ${PORT}`);
 });
