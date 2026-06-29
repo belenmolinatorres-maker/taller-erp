@@ -8,7 +8,7 @@ const db = require('./db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_me';
 const app = express();
-const PORT = process.env.PORT || 3001;
+const APP_PORT = process.env.APP_PORT || process.env.PORT || 3001;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(require('path').join(__dirname, '..')));
@@ -966,6 +966,6 @@ app.use((err, req, res, next) => {
 });
 
 // ===================== START =====================
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Taller ERP API server running on port ${PORT}`);
+app.listen(APP_PORT, '0.0.0.0', () => {
+  console.log(`Taller ERP API server running on port ${APP_PORT}`);
 });
